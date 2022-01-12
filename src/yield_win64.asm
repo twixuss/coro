@@ -1,6 +1,8 @@
 bits 64
 
-global tl_coroutine_yield
+global coro_yield
+global coro_return
+extern coro_error
 
 coro_state:
 .resume equ 0x00
@@ -8,7 +10,7 @@ coro_state:
 
 section .text
 
-t_coro_yield:
+coro_yield:
 	; yield value
 	mov rax, rdx
 
@@ -42,3 +44,10 @@ t_coro_yield:
 	pop rbp
 
 	jmp r8
+
+
+coro_return:
+	lea rcx, [rsp + 16]
+	mov rdx, rax
+	call coro_yield
+	jmp coro_error
