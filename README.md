@@ -4,8 +4,9 @@
 #include <coro.h>
 
 size_t simple_coro(coro_state *state, size_t param) {
+	int x = 59;
 	coro_yield(state, 32);
-	coro_yield(state, 59);
+	coro_yield(state, x);
 	return 123;
 }
 
