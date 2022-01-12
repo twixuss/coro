@@ -1,5 +1,5 @@
 # Simple Coroutine For C and C++
-## Example
+## C Example
 ```c
 #include <coro.h>
 
