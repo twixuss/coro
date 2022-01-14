@@ -47,7 +47,7 @@ coro_yield:
 
 
 coro_return:
-	lea rcx, [rsp + 16]
+	lea rcx, [rsp + 32]
 	mov rdx, rax
 	call coro_yield
 	jmp coro_error
