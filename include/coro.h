@@ -1,12 +1,7 @@
 #pragma once
 #include <stddef.h>
 
-typedef struct {
-	void *resume;
-	void *sp;
-	void *buffer_base;
-	void *mark;
-} coro_state;
+typedef struct coro_state coro_state;
 
 typedef size_t (*coroutine_t)(coro_state *, size_t);
 
@@ -14,6 +9,7 @@ void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
 size_t coro_yield(coro_state *state, size_t value);
 void coro_return(void);
 void coro_error(void);
+int has_finished(coro_state *state);
 
 size_t *g_buffer_base;
 size_t *g_buffer_end;
@@ -29,8 +25,8 @@ size_t g_buffer_size;
 #error CORO_MALLOC was defined, but CORO_FREE was not.
 #endif
 #else
-#define CORO_MALLOC(x) _aligned_malloc(x, 16)
-#define CORO_FREE(x)   _aligned_free(x)
+#define CORO_MALLOC(x) malloc(x)
+#define CORO_FREE(x)   free(x)
 #endif
 
 #include <string.h>
@@ -42,7 +38,9 @@ size_t g_buffer_size;
 #endif
 
 #if CORO_DEBUG
+#ifndef CORO_DEBUG_SIZE
 #define CORO_DEBUG_SIZE 128
+#endif
 #else
 #define CORO_DEBUG_SIZE 0
 #endif
@@ -54,19 +52,29 @@ size_t g_buffer_size;
 	// Windows 64-bit
 	//
 
-static const size_t coro_extra_stack_space = 104;
+struct coro_state {
+	void *sp;
+	void *buffer_base;
+};
+
+static const size_t coro_extra_stack_space = 112;
 
 static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
-	const int saved_registers_count = 8; // rbp rbx rsi rdi r12 r13 r14 r15
-	const int register_size = 8;
-
-	state->sp = (char *)state
-		- saved_registers_count * register_size
-		- register_size // return address
-		- 32; // shadow space
-	state->resume = coroutine;
-	*(void **)((char *)state->sp + register_size * (saved_registers_count - 0)) = coro_return; // return address
-	*(void **)((char *)state->sp + register_size * (saved_registers_count - 1)) = 0; // rbp
+	void **sp = state->sp;
+	sp[0] = 0; // r15
+	sp[1] = 0; // r14
+	sp[2] = 0; // r13
+	sp[3] = 0; // r12
+	sp[4] = 0; // rdi
+	sp[5] = 0; // rsi
+	sp[6] = 0; // rbx
+	sp[7] = 0; // rbp
+	sp[8] = coroutine;   // first yield address
+	sp[9] = coro_return; // last  yield address
+	sp[10] = 0; // shadow space
+	sp[11] = 0; // shadow space
+	sp[12] = 0; // shadow space
+	sp[13] = 0; // shadow space
 }
 
 #elif defined(_WIN32)
@@ -75,19 +83,24 @@ static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
 	// Windows 32-bit
 	//
 
-static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
-	const int saved_registers_count = 4; // ebp ebx esi edi
-	const int register_size = 4;
+struct coro_state {
+	void *sp;
+	void *buffer_base;
+};
 
-	state->sp = (char *)state
-		- saved_registers_count * register_size
-		- 8 // state pointer + parameter
-		- register_size; // return address
-	state->resume = coroutine;
-	*(void **)((char *)state->sp + register_size * (saved_registers_count + 2)) = 0; // parameter
-	*(void **)((char *)state->sp + register_size * (saved_registers_count + 1)) = state; // state pointer
-	*(void **)((char *)state->sp + register_size * (saved_registers_count + 0)) = coro_return; // return address
-	*(void **)((char *)state->sp + register_size * (saved_registers_count - 1)) = 0; // ebp
+static const size_t coro_extra_stack_space = 36;
+
+static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
+	void **sp = state->sp;
+	sp[0] = 0; // edi
+	sp[1] = 0; // esi
+	sp[2] = 0; // ebx
+	sp[3] = 0; // ebp
+	sp[4] = coroutine;   // first yield address
+	sp[5] = coro_return; // last  yield address
+	sp[6] = state; // first argument
+	sp[7] = 0; // second argument
+	sp[8] = 0; // did yield once
 }
 
 #elif defined(__linux__)
@@ -105,16 +118,23 @@ static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
 	// Linux 64-bit
 	//
 
-static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
-	const int saved_registers_count = 6; // rbp rbx r12 r13 r14 r15
-	const int register_size = 8;
+struct coro_state {
+	void *sp;
+	void *buffer_base;
+};
 
-	state->sp = (char *)state
-		- saved_registers_count * register_size
-		- register_size; // return address
-	state->resume = coroutine;
-	*(void **)((char *)state->sp + register_size * (saved_registers_count - 0)) = coro_return; // return address
-	*(void **)((char *)state->sp + register_size * (saved_registers_count - 1)) = 0; // rbp
+static const size_t coro_extra_stack_space = 64;
+
+static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
+	void **sp = state->sp;
+	sp[0] = 0; // r15
+	sp[1] = 0; // r14
+	sp[2] = 0; // r13
+	sp[3] = 0; // r12
+	sp[4] = 0; // rbx
+	sp[5] = 0; // rbp
+	sp[6] = coroutine;   // first yield address
+	sp[7] = coro_return; // last  yield address
 }
 
 #endif
@@ -140,10 +160,10 @@ void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size) {
 
 	state->buffer_base = buffer_base;
 
-	state->mark = (void *)(size_t)0xdeadc0de;
-
 	memset(g_debug_start = buffer_base, 0xcd, CORO_DEBUG_SIZE);
 	memset(g_debug_end   = state + 1,   0xcd, CORO_DEBUG_SIZE);
+
+	state->sp = (char *)state - coro_extra_stack_space;
 
 	coro_init_platform(state, coroutine);
 

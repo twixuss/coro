@@ -4,23 +4,14 @@ global _coro_yield
 global _coro_return
 extern _coro_error
 
-coro_state:
-.resume equ 0x00
-.sp     equ 0x04
-
 section .text
 
 _coro_yield:
+	; state pointer
 	mov ecx, [esp + 4]
 
 	; yield value
 	mov eax, [esp + 8]
-
-	; get other resume address
-	mov edx, dword [ecx + coro_state.resume]
-
-	; save my resume address
-	pop dword [ecx + coro_state.resume]
 
 	; save my registers
 	push ebp
@@ -29,7 +20,7 @@ _coro_yield:
 	push edi
 
 	; restore other stack
-	xchg dword [ecx + coro_state.sp], esp
+	xchg [ecx], esp
 
 	; restore other registers
 	pop edi
@@ -37,11 +28,19 @@ _coro_yield:
 	pop ebx
 	pop ebp
 
-	jmp edx
+	mov edx, [ecx - 4]
+	test edx, edx
+	jnz .ret
+	; set up parameters for the first call to coroutine
+	mov byte [ecx - 4], 1
+	mov [esp + 12], eax
+	mov [esp + 8], ecx
+.ret:
+	ret
 
 
 _coro_return:
-	lea ecx, [esp + 8]
+	lea ecx, [esp + 12]
 	push eax
 	push ecx
 	call _coro_yield

@@ -4,10 +4,6 @@ global coro_yield
 global coro_return
 extern coro_error
 
-coro_state:
-.resume equ 0x00
-.sp     equ 0x08
-
 %define state rdi
 %define value rsi
 
@@ -16,12 +12,6 @@ section .text
 coro_yield:
 	; yield value
 	mov rax, value
-
-	; get other resume address
-	mov r8, qword [state + coro_state.resume]
-
-	; save my resume address
-	pop qword [state + coro_state.resume]
 
 	; save my registers
 	push rbp
@@ -32,7 +22,7 @@ coro_yield:
 	push r15
 
 	; restore other stack
-	xchg qword [state + coro_state.sp], rsp
+	xchg qword [state], rsp
 
 	; restore other registers
 	pop r15
@@ -42,11 +32,12 @@ coro_yield:
 	pop rbx
 	pop rbp
 
-	jmp r8
+	ret
 
 
 coro_return:
 	mov state, rsp
 	mov value, rax
+	sub rsp, 8; keep the stack aligned to 16 bytes
 	call coro_yield
 	jmp coro_error
