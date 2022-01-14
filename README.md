@@ -25,4 +25,4 @@ Replace star with appropriate target platform.
 ## Available platforms
 - ✔️ win32
 - ✔️ win64
-- ⚠️ linux64 (`coro_error` segfaults instead of asserting)
+- ✔️⚠️ linux64 (`coro_error` segfaults instead of asserting)
