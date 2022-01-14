@@ -16,6 +16,6 @@ int main(void) {
 	printf("%zu\n", coro_yield(state, 0)); // 42
 	printf("%zu\n", coro_yield(state, 0)); // 123
 	printf("%zu\n", coro_yield(state, 0)); // 4
-	printf("%zu\n", coro_yield(state, 0)); // 4
+	printf("%zu\n", coro_yield(state, 0)); // assertion fail
 	return 0;
 }
