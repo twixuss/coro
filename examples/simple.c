@@ -1,3 +1,4 @@
+#define CORO_IMPL
 #include <coro.h>
 #include <stdio.h>
 #include <stdint.h>
