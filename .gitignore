@@ -1,0 +1,6 @@
+.vs/
+examples/
+!examples/*.c
+/*.obj
+*.pdb
+*.idb
