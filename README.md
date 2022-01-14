@@ -20,7 +20,9 @@ printf("%zu\n", coro_yield(state, 0)); // will print 123
 ## Building
 Replace star with appropriate target platform.
 - Build `src\yield_*.asm`, or link with `obj\yield_*.obj`.
+- Add `include` directory to your compiler.
 - Compile `src\coro.c`.
 ## Available platforms
-- win32
-- win64
+- ✔️ win32
+- ✔️ win64
+- ⚠️ linux64 (`coro_error` segfaults instead of asserting)
