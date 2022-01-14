@@ -1,6 +1,7 @@
 # Simple Coroutine For C and C++
 ## C Example
 ```c
+#define CORO_IMPL // define this to bring in function definitions
 #include <coro.h>
 
 size_t simple_coro(coro_state *state, size_t param) {
