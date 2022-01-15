@@ -18,14 +18,9 @@ void coro_error(void);
 #endif
 
 void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
-int has_finished(coro_state *state);
+void coro_free(coro_state **_state);
 
-size_t *g_buffer_base;
-size_t *g_buffer_end;
-coro_state *g_coro_state;
-size_t *g_debug_start;
-size_t *g_debug_end;
-size_t g_buffer_size;
+int has_finished(coro_state *state);
 
 #ifdef CORO_IMPL
 
@@ -54,6 +49,8 @@ size_t g_buffer_size;
 #define CORO_DEBUG_SIZE 0
 #endif
 
+void coro_return(void);
+void coro_error(void);
 
 #ifdef _WIN64
 
@@ -158,19 +155,13 @@ void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size) {
 	char *buffer_base = (char *)CORO_MALLOC(total_size);
 	char *buffer_end = buffer_base + total_size;
 
-	g_buffer_base = buffer_base;
-	g_buffer_end = buffer_end;
-	g_buffer_size = total_size/8;
-
 	coro_state *state = (coro_state *)(buffer_end - sizeof(coro_state) - CORO_DEBUG_SIZE);
 	memset(state, 0, sizeof(*state));
 
-	g_coro_state = state;
-
 	state->buffer_base = buffer_base;
 
-	memset(g_debug_start = buffer_base, 0xcd, CORO_DEBUG_SIZE);
-	memset(g_debug_end   = state + 1,   0xcd, CORO_DEBUG_SIZE);
+	memset(buffer_base, 0xcd, CORO_DEBUG_SIZE);
+	memset(state + 1,   0xcd, CORO_DEBUG_SIZE);
 
 	state->sp = (char *)state - coro_extra_stack_space;
 
