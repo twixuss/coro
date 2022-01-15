@@ -1,4 +1,22 @@
 # Simple Coroutine For C and C++
+This is an implementation of stackful coroutines
+## Interface
+There are 3 functions you need to know about:
+```cpp
+void coro_init(coro_state **state, coroutine_t coroutine, size_t stack_size)
+```
+Initializes coroutine stack.
+
+```cpp
+void coro_free(coro_state **_state);
+```
+Releases coroutine stack.
+
+```cpp
+size_t coro_yield(coro_state *state, size_t value);
+```
+Suspends execution, sending `value` to the coroutine. At the first yield, coroutine will receive `value` in it's parameter. Next time `value` will be returned from `coro_yield`.
+
 ## C Example
 ```c
 #define CORO_IMPL // define this to bring in function definitions
@@ -21,9 +39,8 @@ printf("%zu\n", coro_yield(state, 0)); // will print 123
 ## Building
 Replace star with appropriate target platform.
 - Build `src\yield_*.asm`, or link with `obj\yield_*.obj`.
-- Add `include` directory to your compiler.
-- Compile `src\coro.c`.
+- Include `include\coro.h` and define `CORO_IMPL` in one of your .c files.
 ## Available platforms
 - ✔️ win32
 - ✔️ win64
-- ✔️⚠️ linux64 (`coro_error` segfaults instead of asserting)
+- ✔️ linux64
