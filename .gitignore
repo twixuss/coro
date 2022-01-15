@@ -5,3 +5,4 @@ examples/
 /*.obj
 *.pdb
 *.idb
+*.sln

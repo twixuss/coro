@@ -6,9 +6,10 @@ typedef struct coro_state coro_state;
 typedef size_t (*coroutine_t)(coro_state *, size_t);
 
 void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
+void coro_free(coro_state **_state);
+
 size_t coro_yield(coro_state *state, size_t value);
-void coro_return(void);
-void coro_error(void);
+
 int has_finished(coro_state *state);
 
 size_t *g_buffer_base;
@@ -45,6 +46,8 @@ size_t g_buffer_size;
 #define CORO_DEBUG_SIZE 0
 #endif
 
+void coro_return(void);
+void coro_error(void);
 
 #ifdef _WIN64
 
