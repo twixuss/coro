@@ -5,10 +5,19 @@ typedef struct coro_state coro_state;
 
 typedef size_t (*coroutine_t)(coro_state *, size_t);
 
-void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 size_t coro_yield(coro_state *state, size_t value);
 void coro_return(void);
 void coro_error(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
 int has_finished(coro_state *state);
 
 size_t *g_buffer_base;
@@ -60,7 +69,7 @@ struct coro_state {
 static const size_t coro_extra_stack_space = 112;
 
 static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
-	void **sp = state->sp;
+	void **sp = (void **)state->sp;
 	sp[0] = 0; // r15
 	sp[1] = 0; // r14
 	sp[2] = 0; // r13
