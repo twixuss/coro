@@ -17,7 +17,7 @@ void coro_error(void);
 }
 #endif
 
-void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
+bool coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size);
 void coro_free(coro_state **_state);
 
 int has_finished(coro_state *state);
@@ -150,9 +150,12 @@ static void coro_init_platform(coro_state *state, coroutine_t coroutine) {
 
 #endif
 
-void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size) {
+bool coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size) {
 	size_t total_size = CORO_DEBUG_SIZE + stack_size + coro_extra_stack_space + sizeof(coro_state) + CORO_DEBUG_SIZE;
 	char *buffer_base = (char *)CORO_MALLOC(total_size);
+	if (!buffer_base) {
+		return false;
+	}
 	char *buffer_end = buffer_base + total_size;
 
 	coro_state *state = (coro_state *)(buffer_end - sizeof(coro_state) - CORO_DEBUG_SIZE);
@@ -168,6 +171,7 @@ void coro_init(coro_state **_state, coroutine_t coroutine, size_t stack_size) {
 	coro_init_platform(state, coroutine);
 
 	*_state = state;
+	return true;
 }
 
 #define coro_debug_check(p, msg) \
